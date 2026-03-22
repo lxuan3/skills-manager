@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { getSkillsRepoPath } from "@/lib/config";
-import { listSubmodules, listOwnSkills } from "@/lib/skills-repo";
-import { getSubmoduleStatus } from "@/lib/git";
+import { getSkillsRepoPath } from "@/lib/config.mjs";
+import { listSubmodules, listOwnSkills } from "@/lib/skills-repo.mjs";
+import { getSubmoduleStatus } from "@/lib/git.mjs";
 
 export async function GET() {
   try {

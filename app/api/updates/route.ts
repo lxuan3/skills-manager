@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { getSkillsRepoPath } from "@/lib/config";
-import { listSubmodules } from "@/lib/skills-repo";
-import { fetchSubmodule } from "@/lib/git";
+import { getSkillsRepoPath } from "@/lib/config.mjs";
+import { listSubmodules } from "@/lib/skills-repo.mjs";
+import { fetchSubmodule } from "@/lib/git.mjs";
 
 export async function POST() {
   try {

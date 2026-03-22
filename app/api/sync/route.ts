@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
-import { getSkillsRepoPath } from "@/lib/config";
+import { getSkillsRepoPath } from "@/lib/config.mjs";
 
 export async function POST() {
   try {

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import path from "node:path";
 import os from "node:os";
-import { getSkillsRepoPath } from "@/lib/config";
-import { checkSymlinks } from "@/lib/symlinks";
+import { getSkillsRepoPath } from "@/lib/config.mjs";
+import { checkSymlinks } from "@/lib/symlinks.mjs";
 
 export async function GET() {
   try {
