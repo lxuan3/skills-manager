@@ -10,7 +10,7 @@ export async function POST() {
     const output = execFileSync("bash", [syncScript], {
       cwd: repoPath,
       encoding: "utf8",
-      env: { ...process.env, HOME: process.env.HOME ?? "/Users/hypernode" },
+      env: { ...process.env },
     });
     return NextResponse.json({ output });
   } catch (err: unknown) {

@@ -14,7 +14,10 @@ export async function GET() {
       { name: "cloudflare",  link: path.join(agentsSkills, "cloudflare"),  target: path.join(repoPath, "third-party/cloudflare/skills") },
     ];
     const results = checkSymlinks(expected.map(({ link, target }) => ({ link, target })));
-    const withNames = results.map((r, i) => ({ ...r, name: expected[i].name }));
+    const withNames = results.map((r) => {
+      const match = expected.find((e) => e.link === r.link);
+      return { ...r, name: match?.name ?? r.link };
+    });
     return NextResponse.json({ symlinks: withNames });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

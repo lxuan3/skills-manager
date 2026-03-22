@@ -7,6 +7,8 @@ export async function POST() {
   try {
     const repoPath = getSkillsRepoPath();
     const submodules = listSubmodules(repoPath);
+    // fetchSubmodule runs `git fetch` on the submodule, then diffs local vs remote HEAD
+    // to return { hasUpdates, newCommits, ... } — that's the shape this endpoint returns.
     const results = submodules.map((s) => ({
       name: s.name,
       shortName: s.shortName,
