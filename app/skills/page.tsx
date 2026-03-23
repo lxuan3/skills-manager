@@ -60,10 +60,9 @@ export default function SkillsPage() {
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState("");
 
-  const [showSkillModal, setShowSkillModal] = useState(false);
-  const [skillName, setSkillName] = useState("");
-  const [skillLoading, setSkillLoading] = useState(false);
-  const [skillError, setSkillError] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const [toolPaths, setToolPaths] = useState<ToolPathsConfig>({});
   const [editingTool, setEditingTool] = useState<string | null>(null);
@@ -172,31 +171,6 @@ export default function SkillsPage() {
     await loadState();
   }
 
-  async function handleNewSkill() {
-    setSkillLoading(true);
-    setSkillError("");
-    const res = await fetch("/api/own/new", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: skillName }),
-    });
-    const data = await res.json();
-    if (data.error) {
-      setSkillError(data.error);
-      setSkillLoading(false);
-      return;
-    }
-    await fetch("/api/own/open", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: skillName }),
-    });
-    setShowSkillModal(false);
-    setSkillName("");
-    setSkillLoading(false);
-    await loadState();
-  }
-
   async function handleSavePath(tool: string) {
     setEditSaving(true);
     const res = await fetch("/api/config", {
@@ -227,6 +201,26 @@ export default function SkillsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({}),
     });
+  }
+
+  async function handleDeletePackage() {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
+    setDeleteError("");
+    const res = await fetch("/api/submodule/remove", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: deleteTarget }),
+    });
+    const data = await res.json();
+    if (data.error) {
+      setDeleteError(data.error);
+      setDeleteLoading(false);
+      return;
+    }
+    setDeleteTarget(null);
+    setDeleteLoading(false);
+    await loadState();
   }
 
   if (loading) return <p className="text-gray-500">Loading…</p>;
@@ -306,13 +300,21 @@ export default function SkillsPage() {
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-gray-200 font-medium">{ns.name}</span>
-                    {ns.name === "own" && (
+                    {ns.name === "own" ? (
                       <button
                         onClick={handleOpenOwnDir}
                         className="text-xs text-gray-600 hover:text-gray-400"
                         title="Open own/ in Finder"
                       >
                         open ↗
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => { setDeleteTarget(ns.name); setDeleteError(""); }}
+                        className="text-xs text-gray-700 hover:text-red-500"
+                        title="Remove package"
+                      >
+                        ✕
                       </button>
                     )}
                   </div>
@@ -369,15 +371,6 @@ export default function SkillsPage() {
           className="bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm px-4 py-2 rounded-lg border border-gray-700"
         >
           + Add Package
-        </button>
-        <button
-          onClick={() => {
-            setShowSkillModal(true);
-            setSkillError("");
-          }}
-          className="bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm px-4 py-2 rounded-lg border border-gray-700"
-        >
-          + New Skill
         </button>
       </div>
 
@@ -451,38 +444,34 @@ export default function SkillsPage() {
         </div>
       )}
 
-      {/* New Skill modal */}
-      {showSkillModal && (
+      {/* Remove Package confirmation modal */}
+      {deleteTarget && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-sm space-y-4">
-            <h2 className="text-white font-semibold">New Skill</h2>
-            <div>
-              <label className="text-gray-400 text-xs block mb-1">Skill name</label>
-              <div className="flex items-center bg-gray-800 border border-gray-700 rounded-lg px-3 py-2">
-                <input
-                  type="text"
-                  value={skillName}
-                  onChange={(e) => setSkillName(e.target.value)}
-                  placeholder="my-skill"
-                  className="flex-1 bg-transparent text-gray-200 text-sm font-mono placeholder-gray-600 focus:outline-none"
-                />
-                <span className="text-gray-600 text-sm font-mono">.md</span>
-              </div>
+            <h2 className="text-white font-semibold">Remove Package</h2>
+            <div className="space-y-2 text-sm text-gray-400">
+              <p>Remove <span className="font-mono text-gray-200">{deleteTarget}</span>?</p>
+              <ul className="list-disc list-inside space-y-1 text-gray-500">
+                <li>Disables all active distributions</li>
+                <li>Removes the git submodule</li>
+                <li>You will need to <span className="font-mono">git commit</span> to finalise</li>
+              </ul>
             </div>
-            {skillError && <p className="text-red-400 text-xs">{skillError}</p>}
+            {deleteError && <p className="text-red-400 text-xs">{deleteError}</p>}
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => setShowSkillModal(false)}
-                className="text-gray-500 text-sm hover:text-gray-300"
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleteLoading}
+                className="text-gray-500 text-sm hover:text-gray-300 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
-                onClick={handleNewSkill}
-                disabled={skillLoading || !skillName}
-                className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm px-4 py-2 rounded-lg"
+                onClick={handleDeletePackage}
+                disabled={deleteLoading}
+                className="bg-red-700 hover:bg-red-600 disabled:opacity-50 text-white text-sm px-4 py-2 rounded-lg"
               >
-                {skillLoading ? "Creating…" : "Create & Open"}
+                {deleteLoading ? "Removing…" : "Remove"}
               </button>
             </div>
           </div>
