@@ -21,12 +21,30 @@ type PendingChange = {
   enabled: boolean;
 };
 
+type PathState = "found" | "manual" | "missing" | "undetected";
+type ToolPathEntry = { path: string | null; manual: boolean; state: PathState };
+type ToolPathsConfig = Record<string, ToolPathEntry>;
+
 const TOOL_KEYS = ["claudeCode", "openCode", "openClaw"] as const;
-const TOOL_LABELS: Record<string, { label: string; hint: string }> = {
-  claudeCode: { label: "Claude Code + Codex", hint: "~/.agents/skills/" },
-  openCode: { label: "OpenCode", hint: "opencode.json" },
-  openClaw: { label: "OpenClaw", hint: "~/.openclaw/skills/" },
+const TOOL_LABELS: Record<string, { label: string }> = {
+  claudeCode: { label: "Claude Code + Codex" },
+  openCode: { label: "OpenCode" },
+  openClaw: { label: "OpenClaw" },
 };
+
+const STATE_DOT: Record<PathState, string> = {
+  found: "bg-green-500",
+  manual: "bg-amber-500",
+  missing: "bg-red-500",
+  undetected: "bg-gray-500",
+};
+
+function truncatePath(p: string | null, maxLen = 32): string {
+  if (!p) return "not found";
+  if (p.length <= maxLen) return p;
+  const keep = Math.floor((maxLen - 1) / 2);
+  return p.slice(0, keep) + "…" + p.slice(p.length - keep);
+}
 
 export default function SkillsPage() {
   const [namespaces, setNamespaces] = useState<Namespace[]>([]);
@@ -47,17 +65,25 @@ export default function SkillsPage() {
   const [skillLoading, setSkillLoading] = useState(false);
   const [skillError, setSkillError] = useState("");
 
+  const [toolPaths, setToolPaths] = useState<ToolPathsConfig>({});
+  const [editingTool, setEditingTool] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+  const [redetecting, setRedetecting] = useState(false);
+
   async function loadState() {
     setLoading(true);
     setError("");
-    const res = await fetch("/api/distribution");
-    const data = await res.json();
-    if (data.error) {
-      setError(data.error);
-      setLoading(false);
-      return;
-    }
-    setNamespaces(data.namespaces ?? []);
+    const [distRes, cfgRes] = await Promise.all([
+      fetch("/api/distribution"),
+      fetch("/api/config"),
+    ]);
+    const dist = await distRes.json();
+    const cfg = await cfgRes.json();
+    if (dist.error) { setError(dist.error); setLoading(false); return; }
+    setNamespaces(dist.namespaces ?? []);
+    setToolPaths(cfg.tools ?? {});
+    if (cfg.error) setApplyError(`Config load failed: ${cfg.error}`);
     setPending([]);
     setLoading(false);
   }
@@ -171,6 +197,30 @@ export default function SkillsPage() {
     await loadState();
   }
 
+  async function handleSavePath(tool: string) {
+    setEditSaving(true);
+    const res = await fetch("/api/config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tool, path: editValue }),
+    });
+    const data = await res.json();
+    setEditSaving(false);
+    if (data.error) {
+      setApplyError(`Failed to save path: ${data.error}`);
+    } else {
+      setEditingTool(null);
+    }
+    await loadState();
+  }
+
+  async function handleRedetect() {
+    setRedetecting(true);
+    await fetch("/api/config/detect", { method: "POST" });
+    setRedetecting(false);
+    await loadState();
+  }
+
   async function handleOpenOwnDir() {
     await fetch("/api/own/open", {
       method: "POST",
@@ -199,12 +249,55 @@ export default function SkillsPage() {
               <th className="text-left px-5 py-3 text-gray-500 font-medium text-xs uppercase tracking-wide w-2/5">
                 Namespace
               </th>
-              {TOOL_KEYS.map((key) => (
-                <th key={key} className="px-4 py-3 text-center">
-                  <div className="text-gray-300 text-xs font-semibold">{TOOL_LABELS[key].label}</div>
-                  <div className="text-gray-600 text-xs font-mono mt-0.5">{TOOL_LABELS[key].hint}</div>
-                </th>
-              ))}
+              {TOOL_KEYS.map((key) => {
+                const tp = toolPaths[key];
+                const isEditing = editingTool === key;
+                return (
+                  <th key={key} className="px-4 py-3 text-center">
+                    <div className="text-gray-300 text-xs font-semibold">{TOOL_LABELS[key].label}</div>
+                    {isEditing ? (
+                      <div className="flex items-center gap-1 mt-1 justify-center">
+                        <input
+                          type="text"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          className="bg-gray-800 border border-gray-600 rounded px-1.5 py-0.5 text-gray-200 text-xs font-mono w-40 focus:outline-none focus:border-indigo-500"
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => handleSavePath(key)}
+                          disabled={editSaving}
+                          className="text-indigo-400 text-xs hover:text-indigo-300 disabled:opacity-50"
+                        >
+                          {editSaving ? "…" : "Save"}
+                        </button>
+                        <button
+                          onClick={() => setEditingTool(null)}
+                          className="text-gray-600 text-xs hover:text-gray-400"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : tp ? (
+                      <div className="flex items-center gap-1 mt-1 justify-center">
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full inline-block flex-shrink-0 ${STATE_DOT[tp.state]}`}
+                        />
+                        <span className="text-gray-600 text-xs font-mono" title={tp.path ?? "not found"}>
+                          {truncatePath(tp.path)}
+                        </span>
+                        <button
+                          onClick={() => { setEditingTool(key); setEditValue(tp.path ?? ""); }}
+                          className="text-gray-700 hover:text-gray-400 text-xs ml-0.5"
+                          title="Edit path"
+                        >
+                          ✎
+                        </button>
+                      </div>
+                    ) : null}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
@@ -256,6 +349,13 @@ export default function SkillsPage() {
         </table>
         <div className="px-5 py-2.5 border-t border-gray-800 flex items-center justify-between">
           <span className="text-gray-600 text-xs">{namespaces.length} namespaces · 3 tools</span>
+          <button
+            onClick={handleRedetect}
+            disabled={redetecting}
+            className="text-gray-600 hover:text-gray-400 text-xs disabled:opacity-50"
+          >
+            {redetecting ? "Detecting…" : "Re-detect"}
+          </button>
         </div>
       </div>
 
