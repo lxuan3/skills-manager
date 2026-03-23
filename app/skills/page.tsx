@@ -207,20 +207,24 @@ export default function SkillsPage() {
     if (!deleteTarget) return;
     setDeleteLoading(true);
     setDeleteError("");
-    const res = await fetch("/api/submodule/remove", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: deleteTarget }),
-    });
-    const data = await res.json();
-    if (data.error) {
-      setDeleteError(data.error);
+    try {
+      const res = await fetch("/api/submodule/remove", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: deleteTarget }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setDeleteError(data.error || "Unexpected error. Please try again.");
+        return;
+      }
+      setDeleteTarget(null);
+      await loadState();
+    } catch {
+      setDeleteError("Network error. Please try again.");
+    } finally {
       setDeleteLoading(false);
-      return;
     }
-    setDeleteTarget(null);
-    setDeleteLoading(false);
-    await loadState();
   }
 
   if (loading) return <p className="text-gray-500">Loading…</p>;
