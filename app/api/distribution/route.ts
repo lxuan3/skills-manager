@@ -5,7 +5,7 @@ import { getDistributionState, applyDistributionChanges } from "@/lib/distributi
 export async function GET() {
   try {
     const repoPath = getSkillsRepoPath();
-    const state = getDistributionState(repoPath);
+    const state = await getDistributionState(repoPath);
     return NextResponse.json(state);
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     if (!Array.isArray(changes)) {
       return NextResponse.json({ error: "changes must be an array" }, { status: 400 });
     }
-    const result = applyDistributionChanges(repoPath, changes);
+    const result = await applyDistributionChanges(repoPath, changes);
     return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
