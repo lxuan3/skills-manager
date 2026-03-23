@@ -64,6 +64,11 @@ export default function SkillsPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
+  const [repoNotConfigured, setRepoNotConfigured] = useState(false);
+  const [repoPathInput, setRepoPathInput] = useState("");
+  const [repoPathSaving, setRepoPathSaving] = useState(false);
+  const [repoPathError, setRepoPathError] = useState("");
+
   const [toolPaths, setToolPaths] = useState<ToolPathsConfig>({});
   const [editingTool, setEditingTool] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -79,6 +84,12 @@ export default function SkillsPage() {
     ]);
     const dist = await distRes.json();
     const cfg = await cfgRes.json();
+    if (dist.repoNotConfigured) {
+      setRepoNotConfigured(true);
+      setLoading(false);
+      return;
+    }
+    setRepoNotConfigured(false);
     if (dist.error) { setError(dist.error); setLoading(false); return; }
     setNamespaces(dist.namespaces ?? []);
     setToolPaths(cfg.tools ?? {});
@@ -227,8 +238,61 @@ export default function SkillsPage() {
     }
   }
 
+  async function handleSaveRepoPath() {
+    setRepoPathSaving(true);
+    setRepoPathError("");
+    try {
+      const res = await fetch("/api/repo-path", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: repoPathInput }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setRepoPathError(data.error || "Failed to save path.");
+        return;
+      }
+      await loadState();
+    } catch {
+      setRepoPathError("Network error. Please try again.");
+    } finally {
+      setRepoPathSaving(false);
+    }
+  }
+
   if (loading) return <p className="text-gray-500">Loading…</p>;
   if (error) return <p className="text-red-400">Error: {error}</p>;
+
+  if (repoNotConfigured) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
+        <div className="bg-gray-900 border border-gray-700 rounded-xl p-8 w-full max-w-md space-y-4">
+          <h2 className="text-white font-semibold text-lg">Set Skills Repo Path</h2>
+          <p className="text-sm text-gray-400">
+            Enter the absolute path to your skills git repository.
+          </p>
+          <input
+            type="text"
+            value={repoPathInput}
+            onChange={(e) => setRepoPathInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleSaveRepoPath(); }}
+            placeholder="/Users/you/Github/skills"
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-gray-500"
+          />
+          {repoPathError && <p className="text-red-400 text-xs">{repoPathError}</p>}
+          <div className="flex justify-end">
+            <button
+              onClick={handleSaveRepoPath}
+              disabled={repoPathSaving || !repoPathInput.trim()}
+              className="bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white text-sm px-4 py-2 rounded-lg"
+            >
+              {repoPathSaving ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

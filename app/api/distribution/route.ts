@@ -5,6 +5,7 @@ import { getDistributionState, applyDistributionChanges } from "@/lib/distributi
 export async function GET() {
   try {
     const repoPath = getSkillsRepoPath();
+    if (!repoPath) return NextResponse.json({ repoNotConfigured: true }, { status: 400 });
     const state = await getDistributionState(repoPath);
     return NextResponse.json(state);
   } catch (err) {
@@ -15,6 +16,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const repoPath = getSkillsRepoPath();
+    if (!repoPath) return NextResponse.json({ repoNotConfigured: true }, { status: 400 });
     const { changes } = (await req.json()) as {
       changes: { namespace: string; tool: string; enabled: boolean }[];
     };
