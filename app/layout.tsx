@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import NavLinks from "./NavLinks";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <header className="mb-8 border-b border-gray-800 pb-4">
             <h1 className="text-2xl font-bold text-white">Skills Manager</h1>
             <p className="text-gray-400 text-sm mt-1">Central skills repo · <span className="font-mono">~/Github/skills</span></p>
+            <NavLinks />
           </header>
           {children}
         </div>
