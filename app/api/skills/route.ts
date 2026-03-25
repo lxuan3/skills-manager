@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSkillsRepoPath } from "@/lib/config.mjs";
-import { listSubmodules, listOwnSkills } from "@/lib/skills-repo.mjs";
+import { listSubmodules } from "@/lib/skills-repo.mjs";
 import { getSubmoduleStatus } from "@/lib/git.mjs";
 
 export async function GET() {
@@ -15,8 +15,7 @@ export async function GET() {
       initialized: statusMap[s.name]?.initialized ?? false,
       commitDate: statusMap[s.name]?.commitDate ?? "",
     }));
-    const ownSkills = listOwnSkills(repoPath);
-    return NextResponse.json({ submodules: submodulesWithStatus, ownSkills, repoPath });
+    return NextResponse.json({ submodules: submodulesWithStatus, repoPath });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }

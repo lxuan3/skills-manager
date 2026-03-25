@@ -206,14 +206,6 @@ export default function SkillsPage() {
     await loadState();
   }
 
-  async function handleOpenOwnDir() {
-    await fetch("/api/own/open", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    });
-  }
-
   async function handleDeletePackage() {
     if (!deleteTarget) return;
     setDeleteLoading(true);
@@ -368,23 +360,13 @@ export default function SkillsPage() {
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-gray-200 font-medium">{ns.name}</span>
-                    {ns.name === "own" ? (
-                      <button
-                        onClick={handleOpenOwnDir}
-                        className="text-xs text-gray-600 hover:text-gray-400"
-                        title="Open own/ in Finder"
-                      >
-                        open ↗
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => { setDeleteTarget(ns.name); setDeleteError(""); }}
-                        className="text-xs text-gray-700 hover:text-red-500"
-                        title="Remove package"
-                      >
-                        ✕
-                      </button>
-                    )}
+                    <button
+                      onClick={() => { setDeleteTarget(ns.name); setDeleteError(""); }}
+                      className="text-xs text-gray-700 hover:text-red-500"
+                      title="Remove package"
+                    >
+                      ✕
+                    </button>
                   </div>
                   <div className="text-gray-600 text-xs mt-0.5">
                     {ns.source} · {ns.skillCount} skills

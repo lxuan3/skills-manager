@@ -34,23 +34,20 @@ type UpdateResult = {
 
 export default function HomePage() {
   const [submodules, setSubmodules] = useState<Submodule[]>([]);
-  const [ownSkills, setOwnSkills] = useState<string[]>([]);
   const [repoPath, setRepoPath] = useState("");
   const [symlinks, setSymlinks] = useState<SymlinkStatus[]>([]);
   const [updateResults, setUpdateResults] = useState<UpdateResult[] | null>(null);
   const [selectedUpgrades, setSelectedUpgrades] = useState<string[]>([]);
-  const [syncOutput, setSyncOutput] = useState("");
 
   const [loadingSkills, setLoadingSkills] = useState(true);
   const [loadingSymlinks, setLoadingSymlinks] = useState(true);
   const [loadingUpdates, setLoadingUpdates] = useState(false);
   const [loadingUpgrade, setLoadingUpgrade] = useState(false);
-  const [loadingSync, setLoadingSync] = useState(false);
 
   useEffect(() => {
     fetch("/api/skills")
       .then((r) => r.json())
-      .then((d) => { setSubmodules(d.submodules ?? []); setOwnSkills(d.ownSkills ?? []); setRepoPath(d.repoPath ?? ""); })
+      .then((d) => { setSubmodules(d.submodules ?? []); setRepoPath(d.repoPath ?? ""); })
       .finally(() => setLoadingSkills(false));
 
     fetch("/api/symlinks")
@@ -84,15 +81,6 @@ export default function HomePage() {
     const res = await fetch("/api/skills");
     const data = await res.json();
     setSubmodules(data.submodules ?? []);
-  }
-
-  async function handleSync() {
-    setLoadingSync(true);
-    setSyncOutput("");
-    const res = await fetch("/api/sync", { method: "POST" });
-    const data = await res.json();
-    setSyncOutput(data.output ?? data.error ?? "done");
-    setLoadingSync(false);
   }
 
   function toggleUpgrade(name: string) {
@@ -133,16 +121,6 @@ export default function HomePage() {
           </div>
         )}
 
-        {ownSkills.length > 0 && (
-          <div className="mt-4">
-            <h3 className="text-sm font-semibold text-gray-400 mb-2">own/</h3>
-            <div className="flex flex-wrap gap-2">
-              {ownSkills.map((s) => (
-                <span key={s} className="bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded font-mono">{s}</span>
-              ))}
-            </div>
-          </div>
-        )}
       </section>
 
       {/* Symlink status */}
@@ -228,24 +206,6 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-        )}
-      </section>
-
-      {/* Sync to OpenClaw */}
-      <section>
-        <div className="flex items-center gap-4 mb-2">
-          <h2 className="text-lg font-semibold">Sync to OpenClaw</h2>
-          <button
-            onClick={handleSync}
-            disabled={loadingSync}
-            className="bg-purple-700 hover:bg-purple-600 disabled:opacity-50 text-white text-sm px-4 py-1.5 rounded"
-          >
-            {loadingSync ? "Syncing…" : "Sync own/ → openclaw"}
-          </button>
-        </div>
-        <p className="text-xs text-gray-500 mb-3">Copies <span className="font-mono">own/</span> skills to <span className="font-mono">~/.openclaw/skills</span> via sync.sh</p>
-        {syncOutput && (
-          <pre className="bg-gray-900 rounded p-4 text-xs font-mono text-gray-300 whitespace-pre-wrap">{syncOutput}</pre>
         )}
       </section>
 
