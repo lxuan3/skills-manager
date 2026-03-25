@@ -216,7 +216,7 @@ export default function SkillsPage() {
     await loadState();
   }
 
-  async function handleSaveRepoPath() {
+  async function handleSaveRepoPathEdit() {
     setRepoPathEditSaving(true);
     setRepoPathEditError("");
     const res = await fetch("/api/repo-path", {
@@ -336,11 +336,11 @@ export default function SkillsPage() {
                 type="text"
                 value={repoPathEditValue}
                 onChange={(e) => setRepoPathEditValue(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleSaveRepoPath(); if (e.key === "Escape") setEditingRepoPath(false); }}
+                onKeyDown={(e) => { if (e.key === "Enter") handleSaveRepoPathEdit(); if (e.key === "Escape") setEditingRepoPath(false); }}
                 className="bg-gray-800 border border-gray-600 rounded px-2 py-0.5 text-gray-200 text-xs font-mono w-80 focus:outline-none focus:border-indigo-500"
                 autoFocus
               />
-              <button onClick={handleSaveRepoPath} disabled={repoPathEditSaving} className="text-indigo-400 text-xs hover:text-indigo-300 disabled:opacity-50">
+              <button onClick={handleSaveRepoPathEdit} disabled={repoPathEditSaving} className="text-indigo-400 text-xs hover:text-indigo-300 disabled:opacity-50">
                 {repoPathEditSaving ? "…" : "Save"}
               </button>
               <button onClick={() => setEditingRepoPath(false)} className="text-gray-600 text-xs hover:text-gray-400">Cancel</button>
