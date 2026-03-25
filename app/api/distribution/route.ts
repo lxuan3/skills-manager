@@ -7,7 +7,7 @@ export async function GET() {
     const repoPath = getSkillsRepoPath();
     if (!repoPath) return NextResponse.json({ repoNotConfigured: true }, { status: 400 });
     const state = await getDistributionState(repoPath);
-    return NextResponse.json(state);
+    return NextResponse.json({ ...state, repoPath });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }

@@ -48,6 +48,7 @@ function truncatePath(p: string | null, maxLen = 32): string {
 
 export default function SkillsPage() {
   const [namespaces, setNamespaces] = useState<Namespace[]>([]);
+  const [repoPath, setRepoPath] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [pending, setPending] = useState<PendingChange[]>([]);
@@ -92,6 +93,7 @@ export default function SkillsPage() {
     setRepoNotConfigured(false);
     if (dist.error) { setError(dist.error); setLoading(false); return; }
     setNamespaces(dist.namespaces ?? []);
+    setRepoPath(dist.repoPath ?? "");
     setToolPaths(cfg.tools ?? {});
     if (cfg.error) setApplyError(`Config load failed: ${cfg.error}`);
     setPending([]);
@@ -293,6 +295,9 @@ export default function SkillsPage() {
         <p className="text-gray-500 text-sm mt-1">
           Manage which namespaces sync to each tool. Changes are written on &ldquo;Apply Changes&rdquo;.
         </p>
+        {repoPath && (
+          <p className="text-gray-600 text-xs mt-1 font-mono">{repoPath}</p>
+        )}
       </div>
 
       {/* Matrix table */}
