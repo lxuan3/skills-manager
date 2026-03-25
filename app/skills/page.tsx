@@ -7,6 +7,7 @@ type ToolState = boolean | "na";
 type Namespace = {
   name: string;
   skillCount: number;
+  skills: string[];
   source: string;
   tools: {
     claudeCode: ToolState;
@@ -75,6 +76,13 @@ export default function SkillsPage() {
   const [editValue, setEditValue] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [redetecting, setRedetecting] = useState(false);
+
+  const [editingRepoPath, setEditingRepoPath] = useState(false);
+  const [repoPathEditValue, setRepoPathEditValue] = useState("");
+  const [repoPathEditSaving, setRepoPathEditSaving] = useState(false);
+  const [repoPathEditError, setRepoPathEditError] = useState("");
+
+  const [expandedNs, setExpandedNs] = useState<Set<string>>(new Set());
 
   async function loadState() {
     setLoading(true);
@@ -208,6 +216,32 @@ export default function SkillsPage() {
     await loadState();
   }
 
+  async function handleSaveRepoPath() {
+    setRepoPathEditSaving(true);
+    setRepoPathEditError("");
+    const res = await fetch("/api/repo-path", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: repoPathEditValue }),
+    });
+    const data = await res.json();
+    setRepoPathEditSaving(false);
+    if (data.error) {
+      setRepoPathEditError(data.error);
+    } else {
+      setEditingRepoPath(false);
+      await loadState();
+    }
+  }
+
+  function toggleExpand(ns: string) {
+    setExpandedNs((prev) => {
+      const next = new Set(prev);
+      next.has(ns) ? next.delete(ns) : next.add(ns);
+      return next;
+    });
+  }
+
   async function handleDeletePackage() {
     if (!deleteTarget) return;
     setDeleteLoading(true);
@@ -295,9 +329,36 @@ export default function SkillsPage() {
         <p className="text-gray-500 text-sm mt-1">
           Manage which namespaces sync to each tool. Changes are written on &ldquo;Apply Changes&rdquo;.
         </p>
-        {repoPath && (
-          <p className="text-gray-600 text-xs mt-1 font-mono">{repoPath}</p>
-        )}
+        <div className="flex items-center gap-2 mt-1">
+          {editingRepoPath ? (
+            <>
+              <input
+                type="text"
+                value={repoPathEditValue}
+                onChange={(e) => setRepoPathEditValue(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleSaveRepoPath(); if (e.key === "Escape") setEditingRepoPath(false); }}
+                className="bg-gray-800 border border-gray-600 rounded px-2 py-0.5 text-gray-200 text-xs font-mono w-80 focus:outline-none focus:border-indigo-500"
+                autoFocus
+              />
+              <button onClick={handleSaveRepoPath} disabled={repoPathEditSaving} className="text-indigo-400 text-xs hover:text-indigo-300 disabled:opacity-50">
+                {repoPathEditSaving ? "…" : "Save"}
+              </button>
+              <button onClick={() => setEditingRepoPath(false)} className="text-gray-600 text-xs hover:text-gray-400">Cancel</button>
+              {repoPathEditError && <span className="text-red-400 text-xs">{repoPathEditError}</span>}
+            </>
+          ) : (
+            <>
+              {repoPath && <span className="text-gray-600 text-xs font-mono">{repoPath}</span>}
+              <button
+                onClick={() => { setRepoPathEditValue(repoPath); setRepoPathEditError(""); setEditingRepoPath(true); }}
+                className="text-gray-700 hover:text-gray-400 text-xs"
+                title="Change skills repo path"
+              >
+                ✎
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Matrix table */}
@@ -364,6 +425,13 @@ export default function SkillsPage() {
               <tr key={ns.name} className={i < namespaces.length - 1 ? "border-b border-gray-800" : ""}>
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => toggleExpand(ns.name)}
+                      className="text-gray-600 hover:text-gray-300 text-xs w-3 text-left"
+                      title={expandedNs.has(ns.name) ? "Collapse" : "Expand"}
+                    >
+                      {expandedNs.has(ns.name) ? "▾" : "▸"}
+                    </button>
                     <span className="font-mono text-gray-200 font-medium">{ns.name}</span>
                     <button
                       onClick={() => { setDeleteTarget(ns.name); setDeleteError(""); }}
@@ -373,9 +441,16 @@ export default function SkillsPage() {
                       ✕
                     </button>
                   </div>
-                  <div className="text-gray-600 text-xs mt-0.5">
+                  <div className="text-gray-600 text-xs mt-0.5 ml-5">
                     {ns.source} · {ns.skillCount} skills
                   </div>
+                  {expandedNs.has(ns.name) && ns.skills.length > 0 && (
+                    <div className="ml-5 mt-1 flex flex-wrap gap-1">
+                      {ns.skills.map((s) => (
+                        <span key={s} className="bg-gray-800 text-gray-400 text-xs px-1.5 py-0.5 rounded font-mono">{s}</span>
+                      ))}
+                    </div>
+                  )}
                 </td>
                 {TOOL_KEYS.map((tool) => {
                   const state = effectiveState(ns.name, tool);
