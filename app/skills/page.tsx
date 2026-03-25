@@ -13,12 +13,13 @@ type Namespace = {
     claudeCode: ToolState;
     openCode: ToolState;
     openClaw: ToolState;
+    gemini: ToolState;
   };
 };
 
 type PendingChange = {
   namespace: string;
-  tool: "claudeCode" | "openCode" | "openClaw";
+  tool: "claudeCode" | "openCode" | "openClaw" | "gemini";
   enabled: boolean;
 };
 
@@ -26,11 +27,12 @@ type PathState = "found" | "manual" | "missing" | "undetected";
 type ToolPathEntry = { path: string | null; manual: boolean; state: PathState };
 type ToolPathsConfig = Record<string, ToolPathEntry>;
 
-const TOOL_KEYS = ["claudeCode", "openCode", "openClaw"] as const;
+const TOOL_KEYS = ["claudeCode", "openCode", "openClaw", "gemini"] as const;
 const TOOL_LABELS: Record<string, { label: string }> = {
   claudeCode: { label: "Claude Code + Codex" },
   openCode: { label: "OpenCode" },
   openClaw: { label: "OpenClaw" },
+  gemini: { label: "Gemini CLI" },
 };
 
 const STATE_DOT: Record<PathState, string> = {
@@ -49,7 +51,6 @@ function truncatePath(p: string | null, maxLen = 32): string {
 
 export default function SkillsPage() {
   const [namespaces, setNamespaces] = useState<Namespace[]>([]);
-  const [repoPath, setRepoPath] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [pending, setPending] = useState<PendingChange[]>([]);
@@ -77,11 +78,6 @@ export default function SkillsPage() {
   const [editSaving, setEditSaving] = useState(false);
   const [redetecting, setRedetecting] = useState(false);
 
-  const [editingRepoPath, setEditingRepoPath] = useState(false);
-  const [repoPathEditValue, setRepoPathEditValue] = useState("");
-  const [repoPathEditSaving, setRepoPathEditSaving] = useState(false);
-  const [repoPathEditError, setRepoPathEditError] = useState("");
-
   const [expandedNs, setExpandedNs] = useState<Set<string>>(new Set());
 
   async function loadState() {
@@ -101,7 +97,6 @@ export default function SkillsPage() {
     setRepoNotConfigured(false);
     if (dist.error) { setError(dist.error); setLoading(false); return; }
     setNamespaces(dist.namespaces ?? []);
-    setRepoPath(dist.repoPath ?? "");
     setToolPaths(cfg.tools ?? {});
     if (cfg.error) setApplyError(`Config load failed: ${cfg.error}`);
     setPending([]);
@@ -216,24 +211,6 @@ export default function SkillsPage() {
     await loadState();
   }
 
-  async function handleSaveRepoPathEdit() {
-    setRepoPathEditSaving(true);
-    setRepoPathEditError("");
-    const res = await fetch("/api/repo-path", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path: repoPathEditValue }),
-    });
-    const data = await res.json();
-    setRepoPathEditSaving(false);
-    if (data.error) {
-      setRepoPathEditError(data.error);
-    } else {
-      setEditingRepoPath(false);
-      await loadState();
-    }
-  }
-
   function toggleExpand(ns: string) {
     setExpandedNs((prev) => {
       const next = new Set(prev);
@@ -329,36 +306,6 @@ export default function SkillsPage() {
         <p className="text-gray-500 text-sm mt-1">
           Manage which namespaces sync to each tool. Changes are written on &ldquo;Apply Changes&rdquo;.
         </p>
-        <div className="flex items-center gap-2 mt-1">
-          {editingRepoPath ? (
-            <>
-              <input
-                type="text"
-                value={repoPathEditValue}
-                onChange={(e) => setRepoPathEditValue(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleSaveRepoPathEdit(); if (e.key === "Escape") setEditingRepoPath(false); }}
-                className="bg-gray-800 border border-gray-600 rounded px-2 py-0.5 text-gray-200 text-xs font-mono w-80 focus:outline-none focus:border-indigo-500"
-                autoFocus
-              />
-              <button onClick={handleSaveRepoPathEdit} disabled={repoPathEditSaving} className="text-indigo-400 text-xs hover:text-indigo-300 disabled:opacity-50">
-                {repoPathEditSaving ? "…" : "Save"}
-              </button>
-              <button onClick={() => setEditingRepoPath(false)} className="text-gray-600 text-xs hover:text-gray-400">Cancel</button>
-              {repoPathEditError && <span className="text-red-400 text-xs">{repoPathEditError}</span>}
-            </>
-          ) : (
-            <>
-              {repoPath && <span className="text-gray-600 text-xs font-mono">{repoPath}</span>}
-              <button
-                onClick={() => { setRepoPathEditValue(repoPath); setRepoPathEditError(""); setEditingRepoPath(true); }}
-                className="text-gray-700 hover:text-gray-400 text-xs"
-                title="Change skills repo path"
-              >
-                ✎
-              </button>
-            </>
-          )}
-        </div>
       </div>
 
       {/* Matrix table */}
