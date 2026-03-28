@@ -83,24 +83,28 @@ export default function SkillsPage() {
   async function loadState() {
     setLoading(true);
     setError("");
-    const [distRes, cfgRes] = await Promise.all([
-      fetch("/api/distribution"),
-      fetch("/api/config"),
-    ]);
-    const dist = await distRes.json();
-    const cfg = await cfgRes.json();
-    if (dist.repoNotConfigured) {
-      setRepoNotConfigured(true);
+    try {
+      const [distRes, cfgRes] = await Promise.all([
+        fetch("/api/distribution"),
+        fetch("/api/config"),
+      ]);
+      const dist = await distRes.json();
+      const cfg = await cfgRes.json();
+      if (dist.repoNotConfigured) {
+        setRepoNotConfigured(true);
+        return;
+      }
+      setRepoNotConfigured(false);
+      if (dist.error) { setError(dist.error); return; }
+      setNamespaces(dist.namespaces ?? []);
+      setToolPaths(cfg.tools ?? {});
+      if (cfg.error) setApplyError(`Config load failed: ${cfg.error}`);
+      setPending([]);
+    } catch (e) {
+      setError(String(e));
+    } finally {
       setLoading(false);
-      return;
     }
-    setRepoNotConfigured(false);
-    if (dist.error) { setError(dist.error); setLoading(false); return; }
-    setNamespaces(dist.namespaces ?? []);
-    setToolPaths(cfg.tools ?? {});
-    if (cfg.error) setApplyError(`Config load failed: ${cfg.error}`);
-    setPending([]);
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -310,7 +314,8 @@ export default function SkillsPage() {
 
       {/* Matrix table */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-        <table className="w-full text-sm border-collapse">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[700px] text-sm border-collapse">
           <thead>
             <tr className="border-b border-gray-800">
               <th className="text-left px-5 py-3 text-gray-500 font-medium text-xs uppercase tracking-wide w-2/5">
@@ -426,6 +431,7 @@ export default function SkillsPage() {
             ))}
           </tbody>
         </table>
+        </div>
         <div className="px-5 py-2.5 border-t border-gray-800 flex items-center justify-between">
           <span className="text-gray-600 text-xs">{namespaces.length} namespaces · 3 tools</span>
           <button
