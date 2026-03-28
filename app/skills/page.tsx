@@ -27,12 +27,13 @@ type PathState = "found" | "manual" | "missing" | "undetected";
 type ToolPathEntry = { path: string | null; manual: boolean; state: PathState };
 type ToolPathsConfig = Record<string, ToolPathEntry>;
 
-const TOOL_KEYS = ["claudeCode", "openCode", "openClaw", "gemini"] as const;
+const TOOL_KEYS = ["claudeCode", "openCode", "openClaw", "gemini", "codex"] as const;
 const TOOL_LABELS: Record<string, { label: string }> = {
-  claudeCode: { label: "Claude Code + Codex" },
+  claudeCode: { label: "Claude Code" },
   openCode: { label: "OpenCode" },
   openClaw: { label: "OpenClaw" },
   gemini: { label: "Gemini CLI" },
+  codex: { label: "Codex" },
 };
 
 const STATE_DOT: Record<PathState, string> = {
@@ -433,7 +434,7 @@ export default function SkillsPage() {
         </table>
         </div>
         <div className="px-5 py-2.5 border-t border-gray-800 flex items-center justify-between">
-          <span className="text-gray-600 text-xs">{namespaces.length} namespaces · 3 tools</span>
+          <span className="text-gray-600 text-xs">{namespaces.length} namespaces · {TOOL_KEYS.length} tools</span>
           <button
             onClick={handleRedetect}
             disabled={redetecting}

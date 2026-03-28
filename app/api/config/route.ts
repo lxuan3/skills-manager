@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     if (!tool || !toolPath) {
       return NextResponse.json({ error: "tool and path are required" }, { status: 400 });
     }
-    const VALID_TOOLS = ["claudeCode", "openCode", "openClaw"] as const;
+    const VALID_TOOLS = ["claudeCode", "openCode", "openClaw", "gemini", "codex"] as const;
     if (!VALID_TOOLS.includes(tool as (typeof VALID_TOOLS)[number])) {
       return NextResponse.json({ error: `unknown tool: ${tool}` }, { status: 400 });
     }
