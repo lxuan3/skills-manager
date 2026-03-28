@@ -14,12 +14,13 @@ type Namespace = {
     openCode: ToolState;
     openClaw: ToolState;
     gemini: ToolState;
+    codex: ToolState;
   };
 };
 
 type PendingChange = {
   namespace: string;
-  tool: "claudeCode" | "openCode" | "openClaw" | "gemini";
+  tool: "claudeCode" | "openCode" | "openClaw" | "gemini" | "codex";
   enabled: boolean;
 };
 
